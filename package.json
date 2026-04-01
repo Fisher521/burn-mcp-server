@@ -1,0 +1,44 @@
+{
+  "name": "burn-mcp-server",
+  "version": "2.0.1",
+  "description": "MCP Server for Burn — 22 tools to let your AI agent search, triage, and organize your reading. Works with Claude, Cursor, Windsurf.",
+  "main": "dist/index.js",
+  "bin": {
+    "burn-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "bookmark",
+    "reading",
+    "knowledge-base",
+    "claude",
+    "cursor",
+    "windsurf",
+    "ai-agent",
+    "burn"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fisher521/burn-mcp-server.git"
+  },
+  "homepage": "https://burn451.cloud",
+  "bugs": {
+    "url": "https://github.com/Fisher521/burn-mcp-server/issues"
+  },
+  "license": "MIT",
+  "author": "Burn451 <hawking520@gmail.com>",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  }
+}
