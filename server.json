@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.fisher521/burn-mcp-server",
+  "description": "Personal knowledge base MCP server — 22 tools to let your AI agent search, triage, and organize your reading list. Built for Burn451.",
+  "repository": {
+    "url": "https://github.com/Fisher521/burn-mcp-server",
+    "source": "github"
+  },
+  "version": "2.0.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "burn-mcp-server",
+      "version": "2.0.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Long-lived MCP access token from Burn App Settings",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "BURN_MCP_TOKEN"
+        }
+      ]
+    }
+  ]
+}
