@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Burn MCP Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 640px; margin: 80px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    .tag { display: inline-block; background: #ff6a00; color: white; padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px; }
+    pre { background: #f5f5f5; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+    a { color: #ff6a00; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Burn MCP Server</h1>
+  <p><span class="tag">MCP</span> <span class="tag">Streamable HTTP</span> Read less, absorb more.</p>
+  <p>This is the remote HTTP endpoint for <a href="https://burn451.cloud">Burn</a>'s Model Context Protocol server. 26 tools to let Claude / Cursor / Windsurf search, triage, and analyze your saved reading.</p>
+
+  <h2>Connect</h2>
+  <p>Paste this into your MCP client (Claude Desktop, Cursor, Windsurf, etc.):</p>
+  <pre>{
+  "mcpServers": {
+    "burn": {
+      "url": "https://mcp.burn451.cloud/mcp",
+      "headers": {
+        "Authorization": "Bearer &lt;your-token&gt;"
+      }
+    }
+  }
+}</pre>
+
+  <p>Get your token: <a href="https://burn451.cloud">burn451.cloud</a> → Settings → MCP Server → Copy Access Token</p>
+
+  <h2>Links</h2>
+  <ul>
+    <li><a href="https://github.com/Fisher521/burn-mcp-server">Source code on GitHub</a></li>
+    <li><a href="https://www.npmjs.com/package/burn-mcp-server">npm package (stdio mode)</a></li>
+    <li><a href="https://burn451.cloud">Burn web app</a></li>
+    <li><a href="https://x.com/hawking520">Built by @hawking520</a></li>
+  </ul>
+
+  <p style="color: #888; font-size: 13px; margin-top: 40px;">MIT licensed. Part of an open ecosystem of AI-era reading tools.</p>
+</body>
+</html>

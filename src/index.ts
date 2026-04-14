@@ -4,12 +4,8 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createClient } from '@supabase/supabase-js'
-import {
-  exchangeToken,
-  applySession,
-  loadCachedSession,
-  saveCachedSession,
-} from './lib/auth.js'
+import { exchangeToken, applySession } from './lib/auth.js'
+import { loadCachedSession, saveCachedSession } from './lib/auth-stdio.js'
 import { createBurnServer } from './setup.js'
 
 const SUPABASE_URL = process.env.BURN_SUPABASE_URL || 'https://juqtxylquemiuvvmgbej.supabase.co'

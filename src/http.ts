@@ -39,11 +39,13 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
     }), { status: 401, headers: { 'content-type': 'application/json' } })
   }
 
-  // --- Build per-request Supabase client + Burn server ---
+  // --- Build per-request Supabase client with JWT in headers (faster than setSession, Edge-safe) ---
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    },
   })
-  await applySession(supabase, session)
 
   const server = createBurnServer(supabase, { rateLimitPerMin: 60 })
 
@@ -57,57 +59,4 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
   return transport.handleRequest(req)
 }
 
-// ---------- Node.js standalone server (for `npm run dev:http`) ----------
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const PORT = Number(process.env.PORT) || 3001
-  const { createServer } = await import('node:http')
-
-  const server = createServer(async (nodeReq, nodeRes) => {
-    try {
-      // Convert Node IncomingMessage → Web Request
-      const url = new URL(nodeReq.url || '/', `http://${nodeReq.headers.host || 'localhost'}`)
-      const headers = new Headers()
-      for (const [k, v] of Object.entries(nodeReq.headers)) {
-        if (typeof v === 'string') headers.set(k, v)
-      }
-      const body = ['GET', 'HEAD'].includes(nodeReq.method || 'GET')
-        ? null
-        : await new Promise<Buffer>((resolve, reject) => {
-            const chunks: Buffer[] = []
-            nodeReq.on('data', c => chunks.push(c))
-            nodeReq.on('end', () => resolve(Buffer.concat(chunks)))
-            nodeReq.on('error', reject)
-          })
-
-      const webReq = new Request(url, {
-        method: nodeReq.method,
-        headers,
-        body: body && body.length > 0 ? body : null,
-      })
-
-      const webRes = await handleMcpRequest(webReq)
-
-      nodeRes.statusCode = webRes.status
-      webRes.headers.forEach((v, k) => nodeRes.setHeader(k, v))
-      if (webRes.body) {
-        const reader = webRes.body.getReader()
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          nodeRes.write(value)
-        }
-      }
-      nodeRes.end()
-    } catch (e: any) {
-      nodeRes.statusCode = 500
-      nodeRes.setHeader('content-type', 'application/json')
-      nodeRes.end(JSON.stringify({ error: 'Internal error', detail: String(e?.message || e) }))
-    }
-  })
-
-  server.listen(PORT, () => {
-    console.log(`Burn MCP HTTP server listening on http://localhost:${PORT}`)
-    console.log(`Test: curl -H "Authorization: Bearer <YOUR_TOKEN>" -X POST http://localhost:${PORT} -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'`)
-  })
-}
+// Standalone Node dev server is in src/http-dev.ts (npm run dev:http)

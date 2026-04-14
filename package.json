@@ -1,6 +1,6 @@
 {
   "name": "burn-mcp-server",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "mcpName": "io.github.Fisher521/burn-mcp-server",
   "description": "Burn MCP — give your AI agent a reading workflow. 26 tools to search, triage, burn, vault, and analyze your saved articles. Works with Claude, Cursor, Windsurf.",
   "main": "dist/index.js",
@@ -9,8 +9,9 @@
   },
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=cjs --packages=external",
-    "build:http": "esbuild src/http.ts --bundle --platform=node --target=node18 --outfile=dist/http.mjs --format=esm --packages=external",
-    "build:all": "npm run build && npm run build:http",
+    "build:http": "esbuild src/http-dev.ts --bundle --platform=node --target=node18 --outfile=dist/http.mjs --format=esm --packages=external",
+    "build:vercel": "esbuild src/vercel-handler.ts --bundle --platform=node --target=node18 --outfile=api/mcp.mjs --format=esm --packages=external",
+    "build:all": "npm run build && npm run build:http && npm run build:vercel",
     "typecheck": "node --max-old-space-size=4096 node_modules/typescript/bin/tsc --noEmit",
     "start": "node dist/index.js",
     "dev:http": "npm run build:http && node dist/http.mjs"

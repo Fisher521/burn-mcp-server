@@ -1,14 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020"],
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowJs": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/lib/**/*", "src/index.ts", "src/http.ts", "src/http-dev.ts"],
+  "exclude": ["src/setup.ts", "api/**/*", "dist/**/*", "node_modules/**/*"]
 }

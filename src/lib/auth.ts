@@ -1,8 +1,7 @@
-// Burn MCP auth — token exchange + optional session caching
+// Burn MCP auth — Edge/runtime-safe (no node: imports here)
 //
-// Two transport modes:
-//   - stdio (single-user CLI):   uses local session cache file (~/.burn/mcp-session.json)
-//   - http  (multi-user server): no cache, fresh exchange per request (or short in-memory TTL)
+// stdio-only session cache (fs-based) is in ./auth-stdio.ts — only imported by src/index.ts.
+// HTTP mode uses in-memory TTL cache declared here (safe in Edge).
 
 import { SupabaseClient } from '@supabase/supabase-js'
 
@@ -35,7 +34,7 @@ export async function exchangeToken(
   return { access_token: data.access_token, refresh_token: data.refresh_token }
 }
 
-/** Apply a session to a supabase client, with auto-cache on token refresh (stdio mode only). */
+/** Apply a session to a supabase client, with optional auto-cache on token refresh (stdio mode only). */
 export async function applySession(
   supabase: SupabaseClient,
   session: Session,
@@ -53,41 +52,14 @@ export async function applySession(
 }
 
 // ---------------------------------------------------------------------------
-// stdio-only: local session cache so we don't re-exchange on every restart
-// ---------------------------------------------------------------------------
-
-import { homedir } from 'node:os'
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
-
-const CACHE_DIR = join(homedir(), '.burn')
-const CACHE_FILE = join(CACHE_DIR, 'mcp-session.json')
-
-export function loadCachedSession(): Session | null {
-  try {
-    const raw = readFileSync(CACHE_FILE, 'utf-8')
-    const data = JSON.parse(raw)
-    if (data.access_token && data.refresh_token) return data
-  } catch { /* no cache or invalid */ }
-  return null
-}
-
-export function saveCachedSession(session: Session): void {
-  try {
-    mkdirSync(CACHE_DIR, { recursive: true })
-    writeFileSync(CACHE_FILE, JSON.stringify(session), { mode: 0o600 })
-  } catch { /* non-fatal */ }
-}
-
-// ---------------------------------------------------------------------------
-// HTTP mode: per-token in-memory session cache (TTL-based, no disk)
+// HTTP mode: per-token in-memory session cache (TTL-based, safe in Edge)
 // ---------------------------------------------------------------------------
 
 interface CacheEntry { session: Session; expiresAt: number }
 const httpSessionCache = new Map<string, CacheEntry>()
 const HTTP_CACHE_TTL_MS = 5 * 60_000  // 5 min
 
-/** Get or refresh a session for an HTTP request. Caches by token hash for HTTP_CACHE_TTL_MS. */
+/** Get or refresh a session for an HTTP request. */
 export async function getOrExchangeSession(mcpToken: string): Promise<Session> {
   const now = Date.now()
   const cached = httpSessionCache.get(mcpToken)
