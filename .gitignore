@@ -2,4 +2,9 @@ node_modules/
 dist/
 *.js.map
 .env
+.env.*
 .burn/
+
+# mcp-publisher auth tokens — do NOT commit
+.mcpregistry_github_token
+.mcpregistry_registry_token

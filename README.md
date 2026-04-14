@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/burn-mcp-server.svg)](https://www.npmjs.com/package/burn-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Your reading data as an AI-accessible knowledge base. 22 tools for Claude, Cursor, Windsurf, and any MCP-compatible agent.
+Your reading data as an AI-accessible knowledge base. 26 tools for Claude, Cursor, Windsurf, and any MCP-compatible agent.
 
 ## How it works
 
@@ -19,7 +19,7 @@ The MCP server lets your AI agent search, triage, organize, and analyze everythi
 
 ### 1. Get your token
 
-Open Burn App → Settings → MCP Server → **Copy Access Token**
+Download [Burn on iOS](https://apps.apple.com/app/burn451/id6759418544) or use [Burn on the web](https://burn451.cloud) → Settings → MCP Server → **Copy Access Token**
 
 ### 2. Add to Claude Desktop
 
@@ -43,7 +43,7 @@ Open Burn App → Settings → MCP Server → **Copy Access Token**
 - "Triage my Flame — what should I keep?"
 - "Create a collection from my AI bookmarks"
 
-## Tools (22)
+## Tools (26)
 
 ### Search & Read
 
@@ -86,6 +86,15 @@ Open Burn App → Settings → MCP Server → **Copy Access Token**
 | Tool | What it does |
 |------|-------------|
 | `write_bookmark_analysis` | Write structured analysis back to a bookmark |
+
+### Auto-Feed (Agent as your scout)
+
+| Tool | What it does |
+|------|-------------|
+| `add_watched_source` | Watch an X user, RSS feed, or YouTube channel. New posts flow into Flame automatically. |
+| `list_watched_sources` | List all active watched sources |
+| `remove_watched_source` | Stop watching a source |
+| `scrape_watched_sources` | Fetch new content from watched sources on demand |
 
 ## Resources
 

@@ -472,7 +472,7 @@ async function handleGetArticleContent(args: { id: string }) {
 // ---------------------------------------------------------------------------
 
 const API_BASE = process.env.BURN_API_URL || 'https://api.burn451.cloud'
-const API_KEY = process.env.BURN_API_KEY || 'burn451-2026-secret-key'
+const API_KEY = process.env.BURN_API_KEY
 
 /** Detect platform from URL */
 function detectPlatform(url: string): string {
@@ -523,7 +523,7 @@ async function fetchViaAPI(url: string, platform: string): Promise<{ title?: str
 
     const resp = await fetch(`${endpoint}?${params}`, {
       headers: {
-        'x-api-key': API_KEY,
+        ...(API_KEY ? { 'x-api-key': API_KEY } : {}),
         'Accept': 'application/json',
       },
       signal: AbortSignal.timeout(30000),
@@ -1076,6 +1076,249 @@ async function handleUpdateCollectionOverview(args: {
 // Register tools
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Watched Sources — RSS/Atom parser (no external deps)
+// ---------------------------------------------------------------------------
+
+interface FeedItem {
+  url: string
+  title: string
+  author: string
+  publishedAt: string
+}
+
+function decodeXMLEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+}
+
+function extractXMLValue(block: string, tag: string): string | null {
+  // CDATA
+  const cdataRe = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, 'i')
+  const cdata = block.match(cdataRe)
+  if (cdata) return cdata[1].trim()
+
+  // Atom <link href="..."> self-closing
+  if (tag === 'link') {
+    const href = block.match(/<link[^>]+href=["']([^"']+)["'][^>]*(?:\/>|>)/i)
+    if (href) return href[1].trim()
+  }
+
+  // Normal element content
+  const normalRe = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i')
+  const normal = block.match(normalRe)
+  if (normal) return decodeXMLEntities(normal[1].trim())
+
+  return null
+}
+
+function parseRSSFeed(xml: string): FeedItem[] {
+  const items: FeedItem[] = []
+  const itemRe = /<(?:item|entry)(?: [^>]*)?>([\s\S]*?)<\/(?:item|entry)>/gi
+  let m: RegExpExecArray | null
+
+  while ((m = itemRe.exec(xml)) !== null) {
+    const block = m[1]
+    const title = extractXMLValue(block, 'title') || 'Untitled'
+    const rawUrl = extractXMLValue(block, 'link') || extractXMLValue(block, 'id') || ''
+    if (!rawUrl.startsWith('http')) continue
+
+    // Rewrite nitter domains to x.com so parse-x picks them up correctly
+    const url = rawUrl.replace(/^https?:\/\/nitter\.[^/]+/, 'https://x.com')
+
+    const pubStr = extractXMLValue(block, 'pubDate')
+      || extractXMLValue(block, 'published')
+      || extractXMLValue(block, 'updated')
+      || ''
+
+    let publishedAt = new Date().toISOString()
+    try { if (pubStr) publishedAt = new Date(pubStr).toISOString() } catch { /* keep default */ }
+
+    const author = extractXMLValue(block, 'author') || extractXMLValue(block, 'dc:creator') || ''
+    items.push({ url, title, author, publishedAt })
+  }
+
+  return items
+}
+
+async function fetchRSSFeed(feedUrl: string): Promise<FeedItem[]> {
+  const resp = await fetch(feedUrl, {
+    signal: AbortSignal.timeout(12000),
+    headers: {
+      // Use browser UA — many RSS hosts (bearblog, Substack) block bot UAs
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'application/rss+xml, application/atom+xml, text/xml, */*',
+    },
+  })
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} from ${feedUrl}`)
+  return parseRSSFeed(await resp.text())
+}
+
+async function getSourceItems(source: any): Promise<FeedItem[]> {
+  const since = source.last_checked_at ? new Date(source.last_checked_at) : new Date(0)
+
+  switch (source.source_type) {
+    case 'x_user': {
+      // All public nitter instances are currently offline (2026).
+      // X/Twitter removed API access for third-party proxies.
+      // Use fetch_content to add individual tweets manually.
+      throw new Error(`X/Twitter timeline scraping is unavailable — public nitter/RSS proxies are offline. To add @${source.handle} tweets, use fetch_content with individual tweet URLs.`)
+    }
+
+    case 'rss': {
+      const items = await fetchRSSFeed(source.handle)
+      return items.filter(i => new Date(i.publishedAt) > since)
+    }
+
+    case 'youtube': {
+      // Accept channel ID (UCxxx) or full channel URL
+      const channelId = source.handle.match(/UC[A-Za-z0-9_-]{21}[AQgw]/)?.[0] || source.handle
+      const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+      const items = await fetchRSSFeed(rssUrl)
+      return items.filter(i => new Date(i.publishedAt) > since)
+    }
+
+    default:
+      return []
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Watched Sources — handlers
+// ---------------------------------------------------------------------------
+
+async function handleAddWatchedSource(args: { source_type: string; handle: string; name?: string }) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return textResult('Error: Not authenticated')
+
+  const { data: existing } = await supabase
+    .from('watched_sources')
+    .select('id, display_name')
+    .eq('user_id', user.id)
+    .eq('handle', args.handle)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (existing) return textResult(`Already watching "${existing.display_name}"`)
+
+  const { data, error } = await supabase
+    .from('watched_sources')
+    .insert({
+      user_id: user.id,
+      source_type: args.source_type,
+      handle: args.handle,
+      display_name: args.name || args.handle,
+      // null = never checked; first scrape will fetch whatever the feed currently contains
+    })
+    .select()
+    .single()
+
+  if (error) return textResult(`Error: ${error.message}`)
+  return textResult(JSON.stringify({
+    success: true,
+    id: data.id,
+    message: `Now watching "${data.display_name}" (${data.source_type}). Call scrape_watched_sources to fetch new items.`,
+  }, null, 2))
+}
+
+async function handleListWatchedSources() {
+  const { data, error } = await supabase
+    .from('watched_sources')
+    .select('id, source_type, handle, display_name, last_checked_at, created_at')
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+
+  if (error) return textResult(`Error: ${error.message}`)
+  if (!data || data.length === 0) return textResult('No watched sources yet. Use add_watched_source to add one.')
+  return textResult(JSON.stringify(data, null, 2))
+}
+
+async function handleRemoveWatchedSource(args: { id: string }) {
+  const { error } = await supabase
+    .from('watched_sources')
+    .update({ active: false })
+    .eq('id', args.id)
+
+  if (error) return textResult(`Error: ${error.message}`)
+  return textResult('Watched source removed.')
+}
+
+async function handleScrapeWatchedSources(args: { source_id?: string }) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return textResult('Error: Not authenticated')
+
+  let query = supabase
+    .from('watched_sources')
+    .select('*')
+    .eq('active', true)
+    .eq('user_id', user.id)
+
+  if (args.source_id) query = query.eq('id', args.source_id)
+
+  const { data: sources, error } = await query
+  if (error) return textResult(`Error: ${error.message}`)
+  if (!sources || sources.length === 0) {
+    return textResult('No active watched sources. Use add_watched_source to add one.')
+  }
+
+  const countdownExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  const results: any[] = []
+
+  for (const source of sources) {
+    let added = 0
+    let skipped = 0
+    try {
+      const items = await getSourceItems(source)
+
+      for (const item of items) {
+        const { data: dupe } = await supabase
+          .from('bookmarks')
+          .select('id')
+          .eq('url', item.url)
+          .maybeSingle()
+
+        if (dupe) { skipped++; continue }
+
+        const { error: insertErr } = await supabase
+          .from('bookmarks')
+          .insert({
+            user_id: user.id,
+            url: item.url,
+            title: item.title,
+            platform: detectPlatform(item.url),
+            status: 'active',
+            countdown_expires_at: countdownExpiresAt,
+            content_metadata: {
+              author: item.author || source.display_name,
+              watched_source_id: source.id,
+              watched_source_name: source.display_name,
+            },
+          })
+
+        if (!insertErr) added++
+      }
+
+      await supabase
+        .from('watched_sources')
+        .update({ last_checked_at: new Date().toISOString() })
+        .eq('id', source.id)
+
+      results.push({ source: source.display_name, type: source.source_type, added, skipped })
+    } catch (err: any) {
+      results.push({ source: source.display_name, type: source.source_type, error: err.message })
+    }
+  }
+
+  const totalAdded = results.reduce((s, r) => s + (r.added || 0), 0)
+  return textResult(JSON.stringify({ totalAdded, sources: results }, null, 2))
+}
+
 // @ts-expect-error — MCP SDK 1.27 TS2589: type instantiation too deep with multiple .tool() calls
 server.tool(
   'search_vault',
@@ -1292,6 +1535,43 @@ server.tool(
     }).describe('AI-generated overview'),
   },
   rateLimited(handleUpdateCollectionOverview)
+)
+
+// ---------------------------------------------------------------------------
+// Watched Sources tools
+// ---------------------------------------------------------------------------
+
+// @ts-expect-error — MCP SDK TS2589
+server.tool(
+  'add_watched_source',
+  'Watch an X user, RSS feed, or YouTube channel — new posts auto-appear in Burn Flame on each scrape.',
+  {
+    source_type: z.enum(['x_user', 'rss', 'youtube']).describe('x_user = Twitter/X handle | rss = any RSS/Atom feed URL | youtube = YouTube channel ID'),
+    handle: z.string().describe('x_user: username without @ (e.g. "karpathy") | rss: full feed URL | youtube: channel ID starting with UC'),
+    name: z.string().optional().describe('Human-friendly display name (defaults to handle)'),
+  },
+  rateLimited(handleAddWatchedSource)
+)
+
+server.tool(
+  'list_watched_sources',
+  'List all active watched sources (X users, RSS feeds, YouTube channels).',
+  {},
+  rateLimited(handleListWatchedSources)
+)
+
+server.tool(
+  'remove_watched_source',
+  'Stop watching a source. Use list_watched_sources to find the source ID.',
+  { id: z.string().describe('Watched source UUID from list_watched_sources') },
+  rateLimited(handleRemoveWatchedSource)
+)
+
+server.tool(
+  'scrape_watched_sources',
+  'Fetch new content from all watched sources (or one specific source) and add new items to Burn Flame. Call this on a schedule or on demand.',
+  { source_id: z.string().optional().describe('Scrape only this source ID — omit to scrape all active sources') },
+  rateLimited(handleScrapeWatchedSources)
 )
 
 // ---------------------------------------------------------------------------
