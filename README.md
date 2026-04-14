@@ -21,7 +21,35 @@ The MCP server lets your AI agent search, triage, organize, and analyze everythi
 
 Download [Burn on iOS](https://apps.apple.com/app/burn451/id6759418544) or use [Burn on the web](https://burn451.cloud) → Settings → MCP Server → **Copy Access Token**
 
-### 2. Add to Claude Desktop
+### 2. Connect (pick one)
+
+#### Option A — Remote HTTP (recommended, no install)
+
+Add this URL to your MCP client. Works with Claude Desktop, Cursor, Windsurf, ChatGPT desktop, anything that speaks MCP Streamable HTTP:
+
+```
+https://mcp.burn451.cloud/mcp
+```
+
+Authorization header: `Bearer <your-token>`
+
+Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "burn": {
+      "url": "https://mcp.burn451.cloud/mcp",
+      "headers": { "Authorization": "Bearer <your-token>" }
+    }
+  }
+}
+```
+
+No Node install, no npx, no local process — one URL and you're in.
+
+#### Option B — Local stdio (npm install)
+
+For offline / privacy-sensitive setups where you don't want requests going through burn451.cloud:
 
 ```json
 {
@@ -113,7 +141,7 @@ Download [Burn on iOS](https://apps.apple.com/app/burn451/id6759418544) or use [
 
 **Cross-tool intelligence** — Use with Claude Code, Cursor, or Windsurf. Your bookmarks become context for coding, writing, and thinking.
 
-## Environment Variables
+## Environment Variables (stdio mode)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -122,6 +150,33 @@ Download [Burn on iOS](https://apps.apple.com/app/burn451/id6759418544) or use [
 | `BURN_API_URL` | No | Custom API URL (default: production) |
 
 *One of `BURN_MCP_TOKEN` or `BURN_SUPABASE_TOKEN` required.
+
+## Transports
+
+This server ships two transports from the same tool set:
+
+| Transport | Entry | Who it's for |
+|---|---|---|
+| **Streamable HTTP** (`src/http.ts` → `api/mcp.ts`) | Remote server (Vercel Edge) | Most users — paste one URL, done |
+| **stdio** (`src/index.ts`) | `npx burn-mcp-server` | Offline / privacy-first users |
+
+### Self-hosting the HTTP server
+
+```bash
+git clone https://github.com/Fisher521/burn-mcp-server
+cd burn-mcp-server
+npm install
+npm run build:http
+PORT=3791 node dist/http.mjs
+# test:
+curl -sS -X POST http://localhost:3791 \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
+
+Or deploy to Vercel (one-click): `vercel --prod` in repo root. Config is in `vercel.json`.
 
 ## Security
 
