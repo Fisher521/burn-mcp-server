@@ -5,6 +5,9 @@ dist/
 .env.*
 .burn/
 
+# Vercel project linkage (per-dev, don't commit)
+.vercel/
+
 # mcp-publisher auth tokens — do NOT commit
 .mcpregistry_github_token
 .mcpregistry_registry_token

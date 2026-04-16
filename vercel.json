@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/mcp.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/mcp", "destination": "/api/mcp" }
+  ]
+}

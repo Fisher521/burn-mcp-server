@@ -7,12 +7,12 @@
     "source": "github"
   },
   "websiteUrl": "https://burn451.cloud",
-  "version": "2.0.6",
+  "version": "2.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "burn-mcp-server",
-      "version": "2.0.6",
+      "version": "2.1.0",
       "transport": {
         "type": "stdio"
       },
@@ -22,6 +22,20 @@
           "description": "Long-lived MCP token from Burn App → Settings → MCP Server",
           "isRequired": true,
           "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://burn-mcp-server.vercel.app/api/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <BURN_MCP_TOKEN> — generate at https://burn451.cloud → Settings → MCP Server",
+          "isRequired": true,
           "isSecret": true
         }
       ]

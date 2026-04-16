@@ -21,7 +21,9 @@ The MCP server lets your AI agent search, triage, organize, and analyze everythi
 
 Download [Burn on iOS](https://apps.apple.com/app/burn451/id6759418544) or use [Burn on the web](https://burn451.cloud) → Settings → MCP Server → **Copy Access Token**
 
-### 2. Add to Claude Desktop
+### 2. Pick a connection mode
+
+#### 2a. Local — stdio (Claude Desktop / Claude Code CLI / Cursor / Windsurf)
 
 ```json
 {
@@ -36,6 +38,33 @@ Download [Burn on iOS](https://apps.apple.com/app/burn451/id6759418544) or use [
   }
 }
 ```
+
+#### 2b. Remote — HTTPS (claude.ai Connectors / Claude Code Routines / any cloud MCP client)
+
+Endpoint:
+
+```
+https://burn-mcp-server.vercel.app/api/mcp
+```
+
+Auth: `Authorization: Bearer <BURN_MCP_TOKEN>` header.
+
+For **claude.ai Connectors** (Settings → Connectors → Add custom MCP):
+- URL: `https://burn-mcp-server.vercel.app/api/mcp`
+- Header: `Authorization: Bearer <your BURN_MCP_TOKEN>`
+
+For **Claude Code Routines**: link globally in Settings → Connectors; Routines will auto-include it.
+
+Direct curl test:
+
+```bash
+curl -X POST https://burn-mcp-server.vercel.app/api/mcp \
+  -H "Authorization: Bearer $BURN_MCP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}'
+```
+
+Transport: stateless StreamableHTTP, JSON-response mode. Same 26 tools, same token, no install.
 
 ### 3. Start asking
 
