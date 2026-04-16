@@ -1,0 +1,19 @@
+{
+  "name": "Burn MCP Server",
+  "description": "AI-powered reading triage — 26 tools for managing your reading queue with a 24h burn countdown. Save, search, digest, and triage articles from Claude or Cursor.",
+  "version": "2.0.6",
+  "homepage": "https://burn451.cloud",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "reading",
+    "productivity",
+    "knowledge-management",
+    "bookmark",
+    "ai-tools"
+  ],
+  "author": {
+    "name": "Burn451",
+    "url": "https://github.com/Fisher521"
+  }
+}

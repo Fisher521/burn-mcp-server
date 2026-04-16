@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "burn-mcp-server": {
+      "command": "npx",
+      "args": ["-y", "burn-mcp-server"],
+      "env": {
+        "BURN_API_KEY": "<your-burn-api-key>"
+      }
+    }
+  }
+}
