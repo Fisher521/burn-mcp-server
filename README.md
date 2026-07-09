@@ -12,7 +12,7 @@ Your reading data as an AI-accessible knowledge base. 26 tools for Claude, Curso
 
 ## How it works
 
-Burn is a [read-later app with a 24-hour deadline](https://www.burn451.cloud/blog/best-read-later-app-2026?ref=mcp-readme) — saves auto-burn unless you read or rescue them. The honest answer to the [bookmark graveyard problem](https://www.burn451.cloud/bookmark-graveyard?ref=mcp-readme) where [94% of saves are never reopened](https://www.burn451.cloud/read-later-guilt?ref=mcp-readme).
+Burn is a [read-later app with a 24-hour deadline](https://www.burn451.cloud/blog/best-read-later-app-2026?ref=mcp-readme) — saves auto-burn unless you read or rescue them. The honest answer to the [bookmark graveyard problem](https://www.burn451.cloud/bookmark-graveyard?ref=mcp-readme) — research suggests [84% of saved bookmarks are never revisited](https://www.burn451.cloud/read-later-guilt?ref=mcp-readme) (Bergman, Whittaker & Schooler, 2021).
 
 Triage flow:
 - **Flame** → New links. 24h to read or they burn.
