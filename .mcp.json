@@ -4,7 +4,7 @@
       "command": "npx",
       "args": ["-y", "burn-mcp-server"],
       "env": {
-        "BURN_API_KEY": "<your-burn-api-key>"
+        "BURN_MCP_TOKEN": "<your-burn-mcp-token>"
       }
     }
   }
