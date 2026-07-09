@@ -13,27 +13,27 @@ const SUPABASE_URL = process.env.BURN_SUPABASE_URL || 'https://juqtxylquemiuvvmg
 const SUPABASE_ANON_KEY = process.env.BURN_SUPABASE_ANON_KEY || 'sb_publishable_reVgmmCC6ndIo6jFRMM2LQ_wujj5FrO'
 
 // Support both old JWT token (BURN_SUPABASE_TOKEN) and new long-lived MCP token (BURN_MCP_TOKEN)
-const MCP_TOKEN = process.env.BURN_MCP_TOKEN
-const LEGACY_JWT = process.env.BURN_SUPABASE_TOKEN
 const EXCHANGE_URL = process.env.BURN_MCP_EXCHANGE_URL || 'https://api.burn451.cloud/api/mcp-exchange'
 
-if (!MCP_TOKEN && !LEGACY_JWT) {
-  console.error('Error: BURN_MCP_TOKEN environment variable is required.')
-  console.error('Get your token from: Burn App → Settings → MCP Server → Generate Token')
-  process.exit(1)
-}
+export const configSchema = z.object({
+  BURN_MCP_TOKEN: z.string().min(1).describe('Long-lived MCP token from Burn App -> Settings -> MCP Server'),
+})
 
 // ---------------------------------------------------------------------------
 // Supabase client — bootstrapped with anon key, session set after auth below
 // ---------------------------------------------------------------------------
 
-const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: true,
-  },
-  ...(LEGACY_JWT ? { global: { headers: { Authorization: `Bearer ${LEGACY_JWT}` } } } : {}),
-})
+function createSupabaseClient(legacyJwt?: string): SupabaseClient {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: true,
+    },
+    ...(legacyJwt ? { global: { headers: { Authorization: `Bearer ${legacyJwt}` } } } : {}),
+  })
+}
+
+let supabase: SupabaseClient = createSupabaseClient(process.env.BURN_SUPABASE_TOKEN)
 
 // ---------------------------------------------------------------------------
 // Auth: exchange MCP token for a real Supabase session (auto-refreshes)
@@ -63,8 +63,25 @@ function saveCachedSession(access_token: string, refresh_token: string): void {
   } catch { /* non-fatal — next startup will re-exchange */ }
 }
 
-async function initAuth(): Promise<void> {
-  if (LEGACY_JWT) return // legacy mode: JWT already set in headers above
+async function initAuth(options: {
+  mcpToken?: string
+  legacyJwt?: string
+  exchangeUrl?: string
+} = {}): Promise<void> {
+  const legacyJwt = options.legacyJwt ?? process.env.BURN_SUPABASE_TOKEN
+  const mcpToken = options.mcpToken ?? process.env.BURN_MCP_TOKEN
+  const exchangeUrl = options.exchangeUrl ?? EXCHANGE_URL
+
+  if (!mcpToken && !legacyJwt) {
+    console.error('Error: BURN_MCP_TOKEN environment variable is required.')
+    console.error('Get your token from: Burn App -> Settings -> MCP Server -> Generate Token')
+    process.exit(1)
+  }
+
+  if (legacyJwt) {
+    supabase = createSupabaseClient(legacyJwt)
+    return // legacy mode: JWT already set in headers above
+  }
 
   // Step 1: Try cached session (avoids network call on every restart)
   const cached = loadCachedSession()
@@ -85,10 +102,10 @@ async function initAuth(): Promise<void> {
 
   // Step 2: Exchange MCP token for a fresh Supabase session via Vercel API
   try {
-    const resp = await fetch(EXCHANGE_URL, {
+    const resp = await fetch(exchangeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: MCP_TOKEN }),
+      body: JSON.stringify({ token: mcpToken }),
     })
 
     if (!resp.ok) {
@@ -119,7 +136,7 @@ async function initAuth(): Promise<void> {
     console.error('Burn MCP: session exchanged and cached')
   } catch (err: any) {
     console.error('Error: Could not reach token exchange endpoint.', err.message)
-    console.error(`URL: ${EXCHANGE_URL}`)
+    console.error(`URL: ${exchangeUrl}`)
     process.exit(1)
   }
 }
@@ -153,7 +170,7 @@ function checkRateLimit(): string | null {
 
 const server = new McpServer({
   name: 'burn-mcp-server',
-  version: '2.0.0',
+  version: '2.1.0',
 })
 
 // ---------------------------------------------------------------------------
@@ -1642,6 +1659,23 @@ server.resource(
 // Start
 // ---------------------------------------------------------------------------
 
+export function createSandboxServer() {
+  return server
+}
+
+export default async function createServer(context: {
+  config?: { BURN_MCP_TOKEN?: string }
+  env?: Record<string, string | undefined>
+} = {}) {
+  const env = context.env ?? process.env
+  await initAuth({
+    mcpToken: context.config?.BURN_MCP_TOKEN ?? env.BURN_MCP_TOKEN,
+    legacyJwt: env.BURN_SUPABASE_TOKEN,
+    exchangeUrl: env.BURN_MCP_EXCHANGE_URL,
+  })
+  return server
+}
+
 async function main() {
   await initAuth()
   const transport = new StdioServerTransport()
@@ -1649,7 +1683,9 @@ async function main() {
   console.error('Burn MCP Server running on stdio')
 }
 
-main().catch((err) => {
-  console.error('Fatal error:', err)
-  process.exit(1)
-})
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Fatal error:', err)
+    process.exit(1)
+  })
+}
