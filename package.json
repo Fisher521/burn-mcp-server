@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "esbuild src/index.ts --bundle=false --platform=node --target=node18 --outdir=dist --format=cjs",
+    "build:http": "node scripts/build-http.mjs",
     "test": "node --test server-card.test.mjs",
     "typecheck": "node --max-old-space-size=4096 node_modules/typescript/bin/tsc --noEmit",
     "start": "node dist/index.js"
