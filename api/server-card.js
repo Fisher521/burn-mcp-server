@@ -12,7 +12,7 @@ const SERVER_CARD = {
     "websiteUrl": "https://burn451.cloud"
   },
   "description": "Personal Knowledge Base MCP — 26 tools that let AI agents work with a user's curated reading.",
-  "documentationUrl": "https://burn451.cloud/mcp-demo",
+  "documentationUrl": "https://www.burn451.cloud/mcp-demo",
   "transport": {
     "type": "streamable-http",
     "endpoint": "/api/mcp"
