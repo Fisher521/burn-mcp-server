@@ -8,7 +8,7 @@ const SERVER_CARD = {
   "serverInfo": {
     "name": "burn-mcp-server",
     "title": "Burn",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "websiteUrl": "https://burn451.cloud"
   },
   "description": "Personal Knowledge Base MCP — 26 tools that let AI agents work with a user's curated reading.",

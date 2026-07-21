@@ -22,7 +22,7 @@ function responseRecorder() {
 
 test('server card exposes the canonical public metadata and 26 unique tools', () => {
   assert.equal(SERVER_CARD.serverInfo.name, 'burn-mcp-server')
-  assert.equal(SERVER_CARD.serverInfo.version, '2.1.0')
+  assert.equal(SERVER_CARD.serverInfo.version, '2.1.1')
   assert.equal(SERVER_CARD.serverInfo.websiteUrl, 'https://burn451.cloud')
   assert.equal(SERVER_CARD.documentationUrl, 'https://www.burn451.cloud/mcp-demo')
   assert.deepEqual(SERVER_CARD.authentication, { required: true, schemes: ['bearer'] })
