@@ -3,9 +3,13 @@
     "api/mcp.js": {
       "runtime": "nodejs20.x",
       "maxDuration": 30
+    },
+    "api/server-card.js": {
+      "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
-    { "source": "/mcp", "destination": "/api/mcp" }
+    { "source": "/mcp", "destination": "/api/mcp" },
+    { "source": "/.well-known/mcp/server-card.json", "destination": "/api/server-card" }
   ]
 }

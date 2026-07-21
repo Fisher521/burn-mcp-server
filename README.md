@@ -8,7 +8,9 @@
 
 Your reading data as an AI-accessible knowledge base. 26 tools for Claude, Cursor, Windsurf, and any MCP-compatible agent.
 
-> **You need a free Burn account to use this server.** Install the [iOS app](https://apps.apple.com/app/burn451/id6759418544) or open [burn451.cloud](https://www.burn451.cloud/?ref=mcp-cli) → **Settings → MCP Server → Copy Access Token**. Burn has a free tier (5 saves/day, all 26 MCP tools included) and a Pro plan at $4.99/month for unlimited saves.
+**[Watch the real Claude → Burn walkthrough](https://www.burn451.cloud/mcp-demo?ref=npm_readme)** — the exact read-only prompt, tool calls, sources, and limits are published so you can reproduce it.
+
+> **You need a free Burn account to use this server.** Fastest path: open [Burn on the web](https://www.burn451.cloud/settings/extension?ref=npm_mcp) → **Settings → MCP Server → Copy Access Token**. Prefer the app? [Download Burn for iPhone](https://apps.apple.com/app/id6759418544?pt=1050039022&ct=npm_mcp&mt=8). Burn has a free tier (5 saves/day, all 26 MCP tools included) and a Pro plan at $4.99/month for unlimited saves.
 
 ## How it works
 
@@ -33,7 +35,29 @@ The MCP server lets your AI agent search, triage, organize, and analyze everythi
 
 The server exchanges your token for a short-lived Supabase session and caches it in `~/.burn/mcp-session.json`. No re-login on each run.
 
-### 2. Add to Claude Desktop
+### 2a. Remote — Streamable HTTP (fastest)
+
+Use the hosted endpoint with the same Burn token. Nothing runs locally:
+
+```json
+{
+  "mcpServers": {
+    "burn": {
+      "type": "http",
+      "url": "https://burn-mcp-server.vercel.app/api/mcp",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      }
+    }
+  }
+}
+```
+
+For claude.ai, open **Settings → Connectors → Add custom MCP**, use the endpoint above, and add the same `Authorization` header.
+
+### 2b. Local — stdio fallback
+
+Run the npm package locally in Claude Desktop, Cursor, Windsurf, or Claude Code:
 
 ```json
 {
@@ -151,6 +175,16 @@ Writing with your own sources:
 | `remove_watched_source` | Stop watching a source |
 | `scrape_watched_sources` | Fetch new content from watched sources on demand |
 
+## What this doesn't do (yet)
+
+Honest boundaries, so you know what to expect before connecting an agent:
+
+- **No save/add-URL tool.** The agent can search, read, triage, and organize what's already in your Flame/Spark/Vault — it can't add a new URL to your inbox itself. Save from the iOS app, the Chrome Web Clipper, or burn451.cloud first; the agent picks up from there.
+- **Keyword search, not semantic/vector search.** `search_vault` and `search_sparks` match on title, tags, and the AI-generated takeaway — not embedding similarity. Search by topic keyword, not by vague description.
+- **No delete.** Tools move bookmarks between Flame → Spark → Vault → Ash; nothing permanently deletes a row through MCP.
+- **Remote and local transports, but no OAuth flow yet.** The hosted endpoint uses Streamable HTTP at `https://burn-mcp-server.vercel.app/api/mcp`; local clients run `npx burn-mcp-server` over stdio. Both require a token you generate and paste once per client.
+- **Read/triage is the mature path; agent-writes-back is newer.** `write_bookmark_analysis` and `update_collection_overview` let the agent write structured notes back to your data. These write tools are newer and less battle-tested than the read/search/triage tools above.
+
 ## Resources
 
 | URI | Content |
@@ -192,7 +226,7 @@ Writing with your own sources:
 - **App**: [burn451.cloud](https://burn451.cloud?ref=mcp-readme-links)
 - **iOS App**: [App Store](https://apps.apple.com/us/app/burn451/id6759418544)
 - **npm**: [burn-mcp-server](https://www.npmjs.com/package/burn-mcp-server)
-- **Chrome Extension**: Search "Bookmark Autopsy" on Chrome Web Store
+- **Chrome Extension**: [Burn Web Clipper](https://chromewebstore.google.com/detail/burn-web-clipper/ndfjhgbefjcfjbfhdigoncbaocfjmeen) on Chrome Web Store
 - **Read-later app comparison (10 tools tested)**: [best-read-later-app-2026](https://www.burn451.cloud/blog/best-read-later-app-2026?ref=mcp-readme-links)
 - **AI bookmark organizer rankings**: [best-ai-bookmark-manager-2026](https://www.burn451.cloud/blog/best-ai-bookmark-manager-2026?ref=mcp-readme-links)
 - **Pocket alternative pillar**: [pocket-alternative-2026](https://www.burn451.cloud/blog/pocket-replacement-2026?ref=mcp-readme-links)
