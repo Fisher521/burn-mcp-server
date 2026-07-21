@@ -170,7 +170,7 @@ function checkRateLimit(): string | null {
 
 const server = new McpServer({
   name: 'burn-mcp-server',
-  version: '2.1.0',
+  version: '2.1.1',
 })
 
 // ---------------------------------------------------------------------------
@@ -765,21 +765,21 @@ async function handleListVault(args: { limit?: number; category?: string }) {
     .from('bookmarks')
     .select('*')
     .eq('status', 'absorbed')
+
+  // Apply category filtering in PostgREST before limiting the result set.
+  // Filtering after `.limit()` can hide matching categories when they are not
+  // among the user's most recently vaulted bookmarks.
+  if (args.category) {
+    query = query.ilike('content_metadata->>vault_category', args.category)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(args.limit || 20)
 
-  const { data, error } = await query
-
   if (error) return textResult(`Error: ${error.message}`)
 
-  let results = (data || []).map(metaSummary)
-
-  // Filter by category if provided
-  if (args.category) {
-    results = results.filter((r: any) =>
-      r.vaultCategory?.toLowerCase() === args.category!.toLowerCase()
-    )
-  }
+  const results = (data || []).map(metaSummary)
 
   return textResult(JSON.stringify(results, null, 2))
 }
