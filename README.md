@@ -214,6 +214,17 @@ Honest boundaries, so you know what to expect before connecting an agent:
 
 *One of `BURN_MCP_TOKEN` or `BURN_SUPABASE_TOKEN` required.
 
+## Container and Glama release
+
+The container builds the TypeScript source, keeps only production dependencies, and runs the stdio server as a non-root user. Authentication remains a runtime requirement; no token is included in the image.
+
+```bash
+docker build -t burn-mcp-server:2.1.1 .
+docker run --rm -i -e BURN_MCP_TOKEN burn-mcp-server:2.1.1
+```
+
+For a Glama release, use the repository Dockerfile (or the equivalent build steps `npm ci` and `npm run build`), set the CMD to `node dist/index.js`, and declare `BURN_MCP_TOKEN` as a required secret string. The Glama build test needs a dedicated test-account token supplied through its placeholder/secret configuration; never commit that token or use a maintainer's primary account token. After the build test succeeds, publish a Glama release and sync the server profile.
+
 ## Security
 
 - Token scoped to your data only (Row Level Security)
